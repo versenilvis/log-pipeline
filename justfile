@@ -10,6 +10,10 @@ gen-migration-files:
 genpass:
     @openssl rand -hex 32
 
+[group('gen')]
+sqlc:
+    @sqlc generate
+
 [group('docker')]
 up:
     @docker-compose up -d
