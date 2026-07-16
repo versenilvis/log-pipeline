@@ -1,2 +1,3 @@
 docs/plan
 .env
+cmd/ingest/tmp
