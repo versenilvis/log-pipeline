@@ -1,3 +1,5 @@
 docs/plan
 .env
 cmd/ingest/tmp
+tmp
+logs
