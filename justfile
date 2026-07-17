@@ -30,6 +30,7 @@ migrate-version:
 genpass:
     @openssl rand -hex 32
 
+# gen code from sql
 [group('gen')]
 sqlc:
     @sqlc generate
@@ -46,3 +47,28 @@ down:
 [group('docker')]
 checkdb:
     @docker exec -it log-pipeline-db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\d entries"'
+
+alias rcli := redis-cli
+[group('redis')]
+redis-cli:
+    @docker exec -it log-pipeline-redis redis-cli
+
+# redis xrange
+[group('redis')]
+xrange:
+    @docker exec -it log-pipeline-redis redis-cli XRANGE ingest_stream - +
+
+# redis xlen
+[group('redis')]
+xlen:
+    @docker exec -it log-pipeline-redis redis-cli XLEN ingest_streamv
+
+# run linter
+[group('dev')]
+lint:
+    @golangci-lint run ./...
+
+# run all tests
+[group('dev')]
+test:
+    @go test ./... -v
