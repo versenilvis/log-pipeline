@@ -18,9 +18,9 @@ import (
 
 func main() {
 	if err := godotenv.Load(); err != nil {
-		log.Println("INFO: No .env file found, using your deploy environment variables.")
+		logger.Log.Info("no .env file found, using deploy env vars")
 	} else {
-		log.Println("INFO: Using .env file")
+		logger.Log.Info("using .env file for configuration")
 	}
 
 	logger.InitLogger()
