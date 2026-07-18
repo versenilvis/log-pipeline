@@ -17,18 +17,18 @@ import (
 )
 
 func main() {
-	if err := godotenv.Load(); err != nil {
-		logger.Log.Info("no .env file found, using deploy env vars")
-	} else {
-		logger.Log.Info("using .env file for configuration")
-	}
-
 	logger.InitLogger()
 	defer func() {
 		if err := logger.Log.Sync(); err != nil {
 			log.Printf("Log sync error (may be benign): %v\n", err)
 		}
 	}()
+
+	if err := godotenv.Load(); err != nil {
+		logger.Log.Info("no .env file found, using deploy env vars")
+	} else {
+		logger.Log.Info("using .env file for configuration")
+	}
 
 	cfg := config.LoadConfig()
 	logger.Log.Debug("Application Configuration Loaded", zap.String("port", cfg.Port))
