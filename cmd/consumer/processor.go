@@ -15,6 +15,10 @@ func (c *Consumer) processMessages(ctx context.Context, msgs []redis.XMessage) {
 		return
 	}
 
+	// test crash
+	// logger.Log.Info("CRASH TEST: Sleeping 10s. Press Ctrl+C NOW to kill consumer!")
+	// time.Sleep(10 * time.Second)
+
 	var validEntries []models.Entry
 	var validIDs []string
 
