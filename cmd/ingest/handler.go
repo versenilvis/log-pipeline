@@ -13,6 +13,7 @@ import (
 	"github.com/versenilvis/log-pipeline/internal/models"
 )
 
+// move to config to use env var soon
 const (
 	maxBatchSize = 500
 	streamName   = "ingest_stream"
