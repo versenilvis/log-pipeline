@@ -2,8 +2,8 @@ root = "."
 tmp_dir = "tmp"
 
 [build]
-    cmd = "go build -o ./cmd/ingest/tmp/main ./cmd/ingest"
-    bin = "./cmd/ingest/tmp/main"
+    cmd = "go build -o ./tmp/ingest ./cmd/ingest"
+    bin = "./tmp/ingest"
     include_ext = ["go", "yaml", "yml", "env"]
     exclude_dir = ["assets", "tmp", "vendor", "frontend/node_modules"]
     exclude_file = []
