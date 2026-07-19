@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -57,7 +58,9 @@ func main() {
 	// MkStream ensures the consumer group exists, creating it if not
 	// "$" means "start reading from the latest message" (not historical data)
 	if err := rdb.XGroupCreateMkStream(ctx, streamName, groupName, "$").Err(); err != nil {
-		logger.Log.Fatal("failed to create consumer group", zap.Error(err))
+		if !strings.Contains(err.Error(), "BUSYGROUP") {
+			logger.Log.Fatal("failed to create consumer group", zap.Error(err))
+		}
 	}
 
 	c := NewConsumer(rdb, pool, consumerName)
