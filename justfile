@@ -43,10 +43,15 @@ up:
 down:
     @docker-compose down
 
-# quick view db instead of opening db editor
+# quick view db tables instead of opening db editor
 [group('docker')]
 checkdb:
     @docker exec -it log-pipeline-db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "\d entries"'
+
+# quick view db data instead of opening db editor
+[group('docker')]
+showdb:
+    @docker exec -it log-pipeline-db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT id, type, service, message, created_at FROM entries ORDER BY id DESC LIMIT 5;"'
 
 alias rcli := redis-cli
 [group('redis')]
@@ -72,3 +77,8 @@ lint:
 [group('dev')]
 test:
     @go test ./... -v
+
+# run both ingest and consumer concurrently
+[group('dev')]
+dev:
+    @air -c .air.ingest.toml & air -c .air.consumer.toml & wait
