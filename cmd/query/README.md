@@ -1,0 +1,1 @@
+Retrieve raw data from URL -> Clean (validate valid) -> Package according to database standards -> Assign tasks to the database -> Deliver JSON results to the client
