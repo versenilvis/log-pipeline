@@ -8,7 +8,8 @@ import (
 )
 
 type AppConfig struct {
-	Port            string         `json:"port"`
+	QueryPort       string         `json:"query_port"`
+	IngestPort      string         `json:"ingest_port"`
 	Redis           RedisConfig    `json:"redis_config"`
 	Postgres        PostgresConfig `json:"postgres_config"`
 	LogSamplingRate int            `json:"log_sampling_rate"`
@@ -41,7 +42,8 @@ func LoadConfig() *AppConfig {
 		dbUser, dbPass, dbHost, dbPort, dbName)
 
 	cfg := &AppConfig{
-		Port: utils.GetEnv("PORT", "8080"),
+		QueryPort:  utils.GetEnv("QUERY_PORT", "8081"),
+		IngestPort: utils.GetEnv("INGEST_PORT", "8080"),
 		Redis: RedisConfig{
 			Addr:     utils.GetEnv("REDIS_ADDR", ""),
 			Password: utils.GetEnv("REDIS_PASS", ""),
