@@ -78,7 +78,7 @@ lint:
 test:
     @go test ./... -v
 
-# run both ingest and consumer concurrently
+# run ingest, consumer, and query concurrently
 [group('dev')]
 dev:
-    @air -c .air.ingest.toml & air -c .air.consumer.toml & wait
+    @air -c .air.ingest.toml & air -c .air.consumer.toml & air -c .air.query.toml & wait

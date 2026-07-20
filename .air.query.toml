@@ -1,0 +1,22 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+    cmd = "go build -o ./tmp/query ./cmd/query"
+    bin = "./tmp/query"
+    include_ext = ["go", "yaml", "yml", "env"]
+    exclude_dir = ["assets", "tmp", "vendor", "frontend/node_modules"]
+    exclude_file = []
+    delay = 200
+    send_interrupt = true
+    stop_on_error = true
+    log = "build_query.log"
+
+[log]
+    time = true
+
+[color]
+    main = "magenta"
+    watcher = "cyan"
+    build = "yellow"
+    runner = "red"
