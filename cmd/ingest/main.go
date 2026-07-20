@@ -31,7 +31,7 @@ func main() {
 	}
 
 	cfg := config.LoadConfig()
-	logger.Log.Debug("Application Configuration Loaded", zap.String("port", cfg.Port))
+	logger.Log.Debug("Application Configuration Loaded", zap.String("port", cfg.IngestPort))
 
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     cfg.Redis.Addr,
@@ -51,8 +51,9 @@ func main() {
 	app.Post("/v1/ingest", handleIngest(redisClient))
 
 	go func() {
-		if err := app.Listen(":" + cfg.Port); err != nil {
-			logger.Log.Panic("Server failed to start", zap.Error(err))
+		if err := app.Listen(":" + cfg.IngestPort); err != nil {
+			logger.Log.Fatal("failed to start server, ingest port may already be in use",
+				zap.String("port", cfg.IngestPort), zap.Error(err))
 		}
 	}()
 
