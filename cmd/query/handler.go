@@ -71,9 +71,10 @@ func searchLogs(q *db.Queries) fiber.Handler {
 		}
 		if v := c.Query("limit"); v != "" {
 			limit, err := strconv.Atoi(v)
-			if err == nil && limit > 0 && limit <= 200 {
-				params.Limit = int32(limit)
+			if err != nil || limit <= 0 || limit > 200 {
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid limit, must be between 1 and 200"})
 			}
+			params.Limit = int32(limit)
 		}
 
 		logs, err := q.SearchLogs(c.Context(), params)
