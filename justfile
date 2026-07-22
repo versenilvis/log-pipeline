@@ -48,8 +48,8 @@ down:
     @docker compose down
 
 [group('docker')]
-logs:
-    @docker compose logs -f
+logs *args="ingest consumer query":
+    @docker compose logs -f {{args}}
 
 # quick view db tables instead of opening db editor
 [group('docker')]
