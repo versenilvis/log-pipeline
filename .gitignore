@@ -3,3 +3,4 @@ docs/plan
 cmd/ingest/tmp
 tmp
 logs
+bin/
