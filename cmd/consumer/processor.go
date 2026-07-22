@@ -42,14 +42,14 @@ func (c *Consumer) processMessages(ctx context.Context, msgs []redis.XMessage) {
 		}
 		/*
 		after bulkInsert successfully writes a batch log to Postgres,
-		call notifyNewEntry
+		call notifyNewEntries
 		this ensures only noti when the data is truly secure in the database,
 		right before the Consumer sends the XAck completion notification to Redis
 		*/
-		notifyNewEntries(ctx, c.pool, validEntries)
+		notifyNewEntries(ctx, c.pool, validEntries, c.cfg.NotifyPayloadLimit)
 	}
 
-	if err := c.rdb.XAck(ctx, streamName, groupName, validIDs...).Err(); err != nil {
+	if err := c.rdb.XAck(ctx, c.cfg.StreamName, c.cfg.GroupName, validIDs...).Err(); err != nil {
 		logger.Log.Error("XAck failed", zap.Error(err))
 	}
 }
@@ -58,7 +58,7 @@ func (c *Consumer) sendToDeadLetter(ctx context.Context, msg redis.XMessage) {
 	values := msg.Values
 	values["_original_id"] = msg.ID
 	c.rdb.XAdd(ctx, &redis.XAddArgs{
-		Stream: deadLetterName,
+		Stream: c.cfg.DeadLetterName,
 		Values: values,
 	})
 }

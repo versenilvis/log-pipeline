@@ -9,28 +9,19 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 
+	"github.com/versenilvis/log-pipeline/internal/config"
 	"github.com/versenilvis/log-pipeline/internal/logger"
-)
-
-// move to config to use env var soon
-const (
-	streamName     = "ingest_stream"
-	groupName      = "log_processors"
-	deadLetterName = "dead_letter_stream"
-	batchSize      = 50
-	blockTimeout   = 2 * time.Second
-	idleThreshold  = 15 * time.Second
-	recoveryTick   = 15 * time.Second
 )
 
 type Consumer struct {
 	rdb  *redis.Client
 	pool *pgxpool.Pool
 	name string
+	cfg  config.ConsumerConfig
 }
 
-func NewConsumer(rdb *redis.Client, pool *pgxpool.Pool, name string) *Consumer {
-	return &Consumer{rdb: rdb, pool: pool, name: name}
+func NewConsumer(rdb *redis.Client, pool *pgxpool.Pool, name string, cfg config.ConsumerConfig) *Consumer {
+	return &Consumer{rdb: rdb, pool: pool, name: name, cfg: cfg}
 }
 
 func (c *Consumer) RunMainLoop(ctx context.Context) {
@@ -43,11 +34,11 @@ func (c *Consumer) RunMainLoop(ctx context.Context) {
 		// xreadgroup: command to wait for receiving messages
 		// ">" means only messages that have not been assigned to anyone else will be read
 		res, err := c.rdb.XReadGroup(ctx, &redis.XReadGroupArgs{
-			Group:    groupName,
+			Group:    c.cfg.GroupName,
 			Consumer: c.name,
-			Streams:  []string{streamName, ">"},
-			Count:    batchSize,
-			Block:    blockTimeout,
+			Streams:  []string{c.cfg.StreamName, ">"},
+			Count:    c.cfg.BatchSize,
+			Block:    c.cfg.BlockTimeout,
 			// we don't use block: 0 here to make sure the for loop go back to check ctx.Done() and also prevent long time blocking
 		}).Result()
 		if err != nil {
@@ -66,7 +57,7 @@ func (c *Consumer) RunMainLoop(ctx context.Context) {
 }
 
 func (c *Consumer) RunRecoveryLoop(ctx context.Context) {
-	ticker := time.NewTicker(recoveryTick)
+	ticker := time.NewTicker(c.cfg.RecoveryTick)
 	defer ticker.Stop()
 
 	for {
@@ -82,12 +73,12 @@ func (c *Consumer) RunRecoveryLoop(ctx context.Context) {
 
 func (c *Consumer) recoverPending(ctx context.Context) {
 	pending, err := c.rdb.XPendingExt(ctx, &redis.XPendingExtArgs{
-		Stream: streamName,
-		Group:  groupName,
-		Idle:   idleThreshold,
+		Stream: c.cfg.StreamName,
+		Group:  c.cfg.GroupName,
+		Idle:   c.cfg.IdleThreshold,
 		Start:  "-",
 		End:    "+",
-		Count:  batchSize,
+		Count:  c.cfg.BatchSize,
 	}).Result()
 	if err != nil {
 		logger.Log.Error("XPendingExt failed", zap.Error(err))
@@ -105,10 +96,10 @@ func (c *Consumer) recoverPending(ctx context.Context) {
 	}
 
 	claimed, err := c.rdb.XClaim(ctx, &redis.XClaimArgs{
-		Stream:   streamName,
-		Group:    groupName,
+		Stream:   c.cfg.StreamName,
+		Group:    c.cfg.GroupName,
 		Consumer: c.name,
-		MinIdle:  idleThreshold,
+		MinIdle:  c.cfg.IdleThreshold,
 		Messages: ids,
 	}).Result()
 	if err != nil {

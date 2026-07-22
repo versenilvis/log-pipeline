@@ -35,7 +35,7 @@ func bulkInsert(ctx context.Context, pool *pgxpool.Pool, entries []models.Entry)
 	return err
 }
 
-func notifyNewEntries(ctx context.Context, pool *pgxpool.Pool, entries []models.Entry) {
+func notifyNewEntries(ctx context.Context, pool *pgxpool.Pool, entries []models.Entry, payloadLimit int) {
 	payload, err := json.Marshal(entries)
 	if err != nil {
 		logger.Log.Warn("failed to marshal entries for notify", zap.Error(err))
@@ -43,7 +43,7 @@ func notifyNewEntries(ctx context.Context, pool *pgxpool.Pool, entries []models.
 	}
 
 	payloadStr := string(payload)
-	if len(payloadStr) > 7500 {
+	if payloadLimit > 0 && len(payloadStr) > payloadLimit {
 		payloadStr = ""
 	}
 

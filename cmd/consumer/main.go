@@ -57,13 +57,13 @@ func main() {
 
 	// MkStream ensures the consumer group exists, creating it if not
 	// "$" means "start reading from the latest message" (not historical data)
-	if err := rdb.XGroupCreateMkStream(ctx, streamName, groupName, "$").Err(); err != nil {
+	if err := rdb.XGroupCreateMkStream(ctx, cfg.Consumer.StreamName, cfg.Consumer.GroupName, "$").Err(); err != nil {
 		if !strings.Contains(err.Error(), "BUSYGROUP") {
 			logger.Log.Fatal("failed to create consumer group", zap.Error(err))
 		}
 	}
 
-	c := NewConsumer(rdb, pool, consumerName)
+	c := NewConsumer(rdb, pool, consumerName, cfg.Consumer)
 
 	appCtx, cancel := context.WithCancel(context.Background())
 	defer cancel()
