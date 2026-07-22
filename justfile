@@ -37,11 +37,19 @@ sqlc:
 
 [group('docker')]
 up:
-    @docker-compose up -d
+    @docker compose up -d
+
+[group('docker')]
+build:
+    @docker compose build
 
 [group('docker')]
 down:
-    @docker-compose down
+    @docker compose down
+
+[group('docker')]
+logs:
+    @docker compose logs -f
 
 # quick view db tables instead of opening db editor
 [group('docker')]
