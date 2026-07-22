@@ -6,11 +6,16 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/joho/godotenv"
+	"github.com/versenilvis/log-pipeline/internal/config"
 	"github.com/versenilvis/log-pipeline/internal/tracing"
 )
 
 func main() {
-	reporter := tracing.NewReporter("http://localhost:8080", "order-service")
+	_ = godotenv.Load()
+	cfg := config.LoadConfig()
+
+	reporter := tracing.NewReporter(cfg.DemoURLs.IngestURL, "order-service")
 
 	app := fiber.New()
 	app.Use(tracing.Middleware())
@@ -21,7 +26,7 @@ func main() {
 
 		reporter.Log(ctx, "info", "processing order")
 
-		payReq, err := http.NewRequestWithContext(ctx, "POST", "http://localhost:9002/charge", nil)
+		payReq, err := http.NewRequestWithContext(ctx, "POST", cfg.DemoURLs.PaymentServiceURL+"/charge", nil)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create pay request"})
 		}
@@ -31,7 +36,7 @@ func main() {
 			defer payResp.Body.Close()
 		}
 
-		invReq, err := http.NewRequestWithContext(ctx, "POST", "http://localhost:9003/reserve", nil)
+		invReq, err := http.NewRequestWithContext(ctx, "POST", cfg.DemoURLs.InventoryServiceURL+"/reserve", nil)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create inv request"})
 		}
