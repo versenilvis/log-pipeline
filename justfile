@@ -89,3 +89,13 @@ dev:
      go run ./demo/order-service & \
      go run ./demo/api-gateway & \
      wait
+
+# send a test checkout request to api-gateway
+[group('demo')]
+checkout:
+    @curl -i -X POST http://localhost:9000/checkout
+
+# connect to websocket live tailing stream
+[group('demo')]
+ws:
+    @npx -y wscat -c ws://localhost:8081/v1/logs/stream
