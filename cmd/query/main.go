@@ -8,14 +8,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v3"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 
+	db "github.com/versenilvis/log-pipeline/db/sqlc"
 	"github.com/versenilvis/log-pipeline/internal/config"
 	"github.com/versenilvis/log-pipeline/internal/logger"
-	db "github.com/versenilvis/log-pipeline/db/sqlc"
 )
 
 func main() {
@@ -43,12 +44,22 @@ func main() {
 
 	queries := db.New(pool)
 
+	hub := NewHub()
+	go hub.Run()
+	go StartListener(ctx, cfg.Postgres.DSN, hub, queries)
+
 	app := fiber.New()
 	app.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("query api ok")
 	})
 	app.Get("/v1/traces/:id", getTrace(queries))
 	app.Get("/v1/logs", searchLogs(queries))
+	app.Get("/v1/logs/stream", websocket.New(func(c *websocket.Conn) {
+		client := &Client{hub: hub, conn: c, send: make(chan []byte, 16)}
+		hub.register <- client
+		go client.writePump()
+		client.readPump()
+	}))
 
 	go func() {
 		if err := app.Listen(":" + cfg.QueryPort); err != nil {
