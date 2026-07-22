@@ -8,11 +8,19 @@ import (
 )
 
 type AppConfig struct {
-	QueryPort       string         `json:"query_port"`
-	IngestPort      string         `json:"ingest_port"`
-	Redis           RedisConfig    `json:"redis_config"`
-	Postgres        PostgresConfig `json:"postgres_config"`
-	LogSamplingRate int            `json:"log_sampling_rate"`
+	QueryPort       string          `json:"query_port"`
+	IngestPort      string          `json:"ingest_port"`
+	DemoURLs        DemoServiceURLs `json:"demo_urls"`
+	Redis           RedisConfig     `json:"redis_config"`
+	Postgres        PostgresConfig  `json:"postgres_config"`
+	LogSamplingRate int             `json:"log_sampling_rate"`
+}
+
+type DemoServiceURLs struct {
+	IngestURL           string `json:"ingest_url"`
+	OrderServiceURL     string `json:"order_service_url"`
+	PaymentServiceURL   string `json:"payment_service_url"`
+	InventoryServiceURL string `json:"inventory_service_url"`
 }
 
 type RedisConfig struct {
@@ -44,6 +52,12 @@ func LoadConfig() *AppConfig {
 	cfg := &AppConfig{
 		QueryPort:  utils.GetEnv("QUERY_PORT", "8081"),
 		IngestPort: utils.GetEnv("INGEST_PORT", "8080"),
+		DemoURLs: DemoServiceURLs{
+			IngestURL:           utils.GetEnv("INGEST_URL", "http://localhost:8080"),
+			OrderServiceURL:     utils.GetEnv("ORDER_SERVICE_URL", "http://localhost:9001"),
+			PaymentServiceURL:   utils.GetEnv("PAYMENT_SERVICE_URL", "http://localhost:9002"),
+			InventoryServiceURL: utils.GetEnv("INVENTORY_SERVICE_URL", "http://localhost:9003"),
+		},
 		Redis: RedisConfig{
 			Addr:     utils.GetEnv("REDIS_ADDR", ""),
 			Password: utils.GetEnv("REDIS_PASS", ""),
