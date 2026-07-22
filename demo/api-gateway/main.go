@@ -6,12 +6,16 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/joho/godotenv"
+	"github.com/versenilvis/log-pipeline/internal/config"
 	"github.com/versenilvis/log-pipeline/internal/tracing"
 )
 
 func main() {
-	ingestURL := "http://localhost:8080"
-	reporter := tracing.NewReporter(ingestURL, "api-gateway")
+	_ = godotenv.Load()
+	cfg := config.LoadConfig()
+
+	reporter := tracing.NewReporter(cfg.DemoURLs.IngestURL, "api-gateway")
 
 	app := fiber.New()
 	app.Use(tracing.Middleware())
@@ -22,7 +26,7 @@ func main() {
 
 		reporter.Log(ctx, "info", "received checkout request")
 
-		req, err := http.NewRequestWithContext(ctx, "POST", "http://localhost:9001/orders", nil)
+		req, err := http.NewRequestWithContext(ctx, "POST", cfg.DemoURLs.OrderServiceURL+"/orders", nil)
 		if err != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "failed to create request"})
 		}
