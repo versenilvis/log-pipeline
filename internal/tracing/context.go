@@ -8,15 +8,25 @@ import (
 
 type ctxKey string
 
-// TODO: config
 const (
 	traceIDKey      ctxKey = "trace_id"
 	spanIDKey       ctxKey = "span_id"
 	parentSpanIDKey ctxKey = "parent_span_id"
+)
 
+var (
 	HeaderTraceID = "X-Trace-Id"
 	HeaderSpanID  = "X-Span-Id"
 )
+
+func InitTracingConfig(headerTraceID, headerSpanID string) {
+	if headerTraceID != "" {
+		HeaderTraceID = headerTraceID
+	}
+	if headerSpanID != "" {
+		HeaderSpanID = headerSpanID
+	}
+}
 
 func TraceIDFromContext(ctx context.Context) uuid.UUID {
 	id, _ := ctx.Value(traceIDKey).(uuid.UUID)
