@@ -12,11 +12,7 @@ services:
             - pgdata:/var/lib/postgresql/data
         restart: unless-stopped
         healthcheck:
-            test:
-                [
-                    "CMD-SHELL",
-                    "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
-                ]
+            test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
             interval: 5s
             timeout: 5s
             retries: 5
@@ -34,6 +30,125 @@ services:
             interval: 5s
             timeout: 5s
             retries: 5
+
+    ingest:
+        build:
+            context: .
+            args:
+                SERVICE_PATH: ./cmd/ingest
+        container_name: log-pipeline-ingest
+        ports:
+            - "${INGEST_PORT:-8080}:8080"
+        environment:
+            INGEST_PORT: "8080"
+            REDIS_ADDR: log-pipeline-redis:6379
+            DB_HOST: log-pipeline-db
+            DB_PORT: "5432"
+            DB_USER: ${DB_USER:-postgres}
+            DB_PASSWORD: ${DB_PASSWORD:-postgres}
+            DB_NAME: ${DB_NAME:-logpipeline}
+        depends_on:
+            log-pipeline-redis:
+                condition: service_healthy
+            log-pipeline-db:
+                condition: service_healthy
+        restart: unless-stopped
+
+    consumer:
+        build:
+            context: .
+            args:
+                SERVICE_PATH: ./cmd/consumer
+        container_name: log-pipeline-consumer
+        environment:
+            REDIS_ADDR: log-pipeline-redis:6379
+            DB_HOST: log-pipeline-db
+            DB_PORT: "5432"
+            DB_USER: ${DB_USER:-postgres}
+            DB_PASSWORD: ${DB_PASSWORD:-postgres}
+            DB_NAME: ${DB_NAME:-logpipeline}
+        depends_on:
+            log-pipeline-redis:
+                condition: service_healthy
+            log-pipeline-db:
+                condition: service_healthy
+        restart: unless-stopped
+
+    query:
+        build:
+            context: .
+            args:
+                SERVICE_PATH: ./cmd/query
+        container_name: log-pipeline-query
+        ports:
+            - "${QUERY_PORT:-8081}:8081"
+        environment:
+            QUERY_PORT: "8081"
+            DB_HOST: log-pipeline-db
+            DB_PORT: "5432"
+            DB_USER: ${DB_USER:-postgres}
+            DB_PASSWORD: ${DB_PASSWORD:-postgres}
+            DB_NAME: ${DB_NAME:-logpipeline}
+        depends_on:
+            log-pipeline-db:
+                condition: service_healthy
+        restart: unless-stopped
+
+    api-gateway:
+        build:
+            context: .
+            args:
+                SERVICE_PATH: ./demo/api-gateway
+        container_name: demo-api-gateway
+        ports:
+            - "9000:9000"
+        environment:
+            INGEST_URL: http://ingest:8080
+            ORDER_SERVICE_URL: http://order-service:9001
+        depends_on:
+            - ingest
+            - order-service
+        restart: unless-stopped
+
+    order-service:
+        build:
+            context: .
+            args:
+                SERVICE_PATH: ./demo/order-service
+        container_name: demo-order-service
+        environment:
+            INGEST_URL: http://ingest:8080
+            PAYMENT_SERVICE_URL: http://payment-service:9002
+            INVENTORY_SERVICE_URL: http://inventory-service:9003
+        depends_on:
+            - ingest
+            - payment-service
+            - inventory-service
+        restart: unless-stopped
+
+    payment-service:
+        build:
+            context: .
+            args:
+                SERVICE_PATH: ./demo/payment-service
+        container_name: demo-payment-service
+        environment:
+            INGEST_URL: http://ingest:8080
+        depends_on:
+            - ingest
+        restart: unless-stopped
+
+    inventory-service:
+        build:
+            context: .
+            args:
+                SERVICE_PATH: ./demo/inventory-service
+        container_name: demo-inventory-service
+        environment:
+            INGEST_URL: http://ingest:8080
+        depends_on:
+            - ingest
+        restart: unless-stopped
 
 volumes:
     pgdata:
