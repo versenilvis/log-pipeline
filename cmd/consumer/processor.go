@@ -40,6 +40,13 @@ func (c *Consumer) processMessages(ctx context.Context, msgs []redis.XMessage) {
 			logger.Log.Error("bulk insert failed, will retry via recovery", zap.Error(err))
 			return
 		}
+		/*
+		after bulkInsert successfully writes a batch log to Postgres,
+		call notifyNewEntry
+		this ensures only noti when the data is truly secure in the database,
+		right before the Consumer sends the XAck completion notification to Redis
+		*/
+		notifyNewEntry(ctx, c.pool)
 	}
 
 	if err := c.rdb.XAck(ctx, streamName, groupName, validIDs...).Err(); err != nil {
