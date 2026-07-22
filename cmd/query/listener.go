@@ -36,9 +36,14 @@ func StartListener(ctx context.Context, dsn string, hub *Hub, q *db.Queries) {
 			logger.Log.Error("listener: wait failed", zap.Error(err))
 			return
 		}
-		_ = notification
-		// Every time there is a NOTIFY, it immediately uses q.SearchLogs to retrieve the 20 most
-		// recent log lines from the database
+
+		// payload contains the exact new entries in this batch!
+		if notification.Payload != "" {
+			hub.broadcast <- []byte(notification.Payload)
+			continue
+		}
+
+		// payload was empty (e.g. payload size exceeded limit), query latest 20
 		logs, err := q.SearchLogs(ctx, db.SearchLogsParams{Limit: 20})
 		if err != nil {
 			logger.Log.Error("listener: query failed", zap.Error(err))
