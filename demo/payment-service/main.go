@@ -6,11 +6,16 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/joho/godotenv"
+	"github.com/versenilvis/log-pipeline/internal/config"
 	"github.com/versenilvis/log-pipeline/internal/tracing"
 )
 
 func main() {
-	reporter := tracing.NewReporter("http://localhost:8080", "payment-service")
+	_ = godotenv.Load()
+	cfg := config.LoadConfig()
+
+	reporter := tracing.NewReporter(cfg.DemoURLs.IngestURL, "payment-service")
 
 	app := fiber.New()
 	app.Use(tracing.Middleware())
