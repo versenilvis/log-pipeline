@@ -5,7 +5,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
 
+	"github.com/versenilvis/log-pipeline/internal/logger"
 	"github.com/versenilvis/log-pipeline/internal/models"
 )
 
@@ -30,4 +32,11 @@ func bulkInsert(ctx context.Context, pool *pgxpool.Pool, entries []models.Entry)
 		pgx.CopyFromRows(rows),
 	)
 	return err
+}
+
+func notifyNewEntry(ctx context.Context, pool *pgxpool.Pool) {
+	_, err := pool.Exec(ctx, "NOTIFY new_entry")
+	if err != nil {
+		logger.Log.Warn("failed to notify new entry", zap.Error(err))
+	}
 }
