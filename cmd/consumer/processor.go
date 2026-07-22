@@ -46,7 +46,7 @@ func (c *Consumer) processMessages(ctx context.Context, msgs []redis.XMessage) {
 		this ensures only noti when the data is truly secure in the database,
 		right before the Consumer sends the XAck completion notification to Redis
 		*/
-		notifyNewEntry(ctx, c.pool)
+		notifyNewEntries(ctx, c.pool, validEntries)
 	}
 
 	if err := c.rdb.XAck(ctx, streamName, groupName, validIDs...).Err(); err != nil {

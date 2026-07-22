@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -34,8 +35,19 @@ func bulkInsert(ctx context.Context, pool *pgxpool.Pool, entries []models.Entry)
 	return err
 }
 
-func notifyNewEntry(ctx context.Context, pool *pgxpool.Pool) {
-	_, err := pool.Exec(ctx, "NOTIFY new_entry")
+func notifyNewEntries(ctx context.Context, pool *pgxpool.Pool, entries []models.Entry) {
+	payload, err := json.Marshal(entries)
+	if err != nil {
+		logger.Log.Warn("failed to marshal entries for notify", zap.Error(err))
+		return
+	}
+
+	payloadStr := string(payload)
+	if len(payloadStr) > 7500 {
+		payloadStr = ""
+	}
+
+	_, err = pool.Exec(ctx, "SELECT pg_notify('new_entry', $1)", payloadStr)
 	if err != nil {
 		logger.Log.Warn("failed to notify new entry", zap.Error(err))
 	}
