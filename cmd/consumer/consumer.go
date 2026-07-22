@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -50,7 +51,7 @@ func (c *Consumer) RunMainLoop(ctx context.Context) {
 			// we don't use block: 0 here to make sure the for loop go back to check ctx.Done() and also prevent long time blocking
 		}).Result()
 		if err != nil {
-			if err == redis.Nil {
+			if errors.Is(err, redis.Nil) {
 				continue
 			}
 			logger.Log.Error("XReadGroup failed", zap.Error(err))
