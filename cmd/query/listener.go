@@ -8,15 +8,16 @@ import (
 	"go.uber.org/zap"
 
 	db "github.com/versenilvis/log-pipeline/db/sqlc"
+	"github.com/versenilvis/log-pipeline/internal/config"
 	"github.com/versenilvis/log-pipeline/internal/logger"
 )
 
-func StartListener(ctx context.Context, dsn string, hub *Hub, q *db.Queries) {
+func StartListener(ctx context.Context, cfg *config.AppConfig, hub *Hub, q *db.Queries) {
 	/*
 	Open a single Postgres connection completely outside the connection pool
 	(because the pool shares a connection for multiple queries, so the LISTEN command cannot be kept fixed)
 	*/
-	conn, err := pgx.Connect(ctx, dsn)
+	conn, err := pgx.Connect(ctx, cfg.Postgres.DSN)
 	if err != nil {
 		logger.Log.Fatal("listener: failed to connect", zap.Error(err))
 	}
@@ -43,8 +44,8 @@ func StartListener(ctx context.Context, dsn string, hub *Hub, q *db.Queries) {
 			continue
 		}
 
-		// payload was empty (e.g. payload size exceeded limit), query latest 20
-		logs, err := q.SearchLogs(ctx, db.SearchLogsParams{Limit: 20})
+		// payload was empty (e.g. payload size exceeded limit), query latest fallback limit
+		logs, err := q.SearchLogs(ctx, db.SearchLogsParams{Limit: cfg.Query.ListenerFallbackLimit})
 		if err != nil {
 			logger.Log.Error("listener: query failed", zap.Error(err))
 			continue

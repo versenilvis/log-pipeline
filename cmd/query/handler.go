@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 
 	db "github.com/versenilvis/log-pipeline/db/sqlc"
+	"github.com/versenilvis/log-pipeline/internal/config"
 )
 
 func getTrace(q *db.Queries) fiber.Handler {
@@ -32,11 +34,10 @@ func getTrace(q *db.Queries) fiber.Handler {
 	}
 }
 
-func searchLogs(q *db.Queries) fiber.Handler {
+func searchLogs(cfg *config.AppConfig, q *db.Queries) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		params := db.SearchLogsParams{
-			// TODO: config
-			Limit: 50, // default page size
+			Limit: cfg.Query.DefaultPageSize,
 		}
 
 		if v := c.Query("service"); v != "" {
@@ -71,8 +72,10 @@ func searchLogs(q *db.Queries) fiber.Handler {
 		}
 		if v := c.Query("limit"); v != "" {
 			limit, err := strconv.Atoi(v)
-			if err != nil || limit <= 0 || limit > 200 {
-				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"error": "invalid limit, must be between 1 and 200"})
+			if err != nil || limit <= 0 || limit > int(cfg.Query.MaxPageSize) {
+				return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+					"error": fmt.Sprintf("invalid limit, must be between 1 and %d", cfg.Query.MaxPageSize),
+				})
 			}
 			params.Limit = int32(limit)
 		}

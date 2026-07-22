@@ -17,6 +17,7 @@ import (
 	db "github.com/versenilvis/log-pipeline/db/sqlc"
 	"github.com/versenilvis/log-pipeline/internal/config"
 	"github.com/versenilvis/log-pipeline/internal/logger"
+	"github.com/versenilvis/log-pipeline/internal/tracing"
 )
 
 func main() {
@@ -34,6 +35,7 @@ func main() {
 	}
 
 	cfg := config.LoadConfig()
+	tracing.InitTracingConfig(cfg.Tracing.HeaderTraceID, cfg.Tracing.HeaderSpanID)
 
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, cfg.Postgres.DSN)
@@ -46,14 +48,14 @@ func main() {
 
 	hub := NewHub()
 	go hub.Run()
-	go StartListener(ctx, cfg.Postgres.DSN, hub, queries)
+	go StartListener(ctx, cfg, hub, queries)
 
 	app := fiber.New()
 	app.Get("/", func(c fiber.Ctx) error {
 		return c.SendString("query api ok")
 	})
 	app.Get("/v1/traces/:id", getTrace(queries))
-	app.Get("/v1/logs", searchLogs(queries))
+	app.Get("/v1/logs", searchLogs(cfg, queries))
 	app.Get("/v1/logs/stream", websocket.New(func(c *websocket.Conn) {
 		client := &Client{hub: hub, conn: c, send: make(chan []byte, 16)}
 		hub.register <- client
