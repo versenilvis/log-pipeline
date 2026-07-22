@@ -78,7 +78,14 @@ lint:
 test:
     @go test ./... -v
 
-# run ingest, consumer, and query concurrently
+# run pipeline services (ingest, consumer, query) + 4 demo services concurrently
 [group('dev')]
 dev:
-    @air -c .air.ingest.toml & air -c .air.consumer.toml & air -c .air.query.toml & wait
+    @air -c .air.ingest.toml & \
+     air -c .air.consumer.toml & \
+     air -c .air.query.toml & \
+     go run ./demo/payment-service & \
+     go run ./demo/inventory-service & \
+     go run ./demo/order-service & \
+     go run ./demo/api-gateway & \
+     wait
