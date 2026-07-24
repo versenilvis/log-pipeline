@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: ingest
+    namespace: log-pipeline
+spec:
+    selector:
+        app: ingest
+    ports:
+        - port: 8080
+          targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: ingest
+    namespace: log-pipeline
+spec:
+    replicas: 2
+    selector:
+        matchLabels:
+            app: ingest
+    template:
+        metadata:
+            labels:
+                app: ingest
+        spec:
+            containers:
+                - name: ingest
+                  image: log-pipeline-ingest:local
+                  imagePullPolicy: Never
+                  ports:
+                      - containerPort: 8080
+                  envFrom:
+                      - configMapRef:
+                            name: log-pipeline-config
+                      - secretRef:
+                            name: log-pipeline-secret
+                  readinessProbe:
+                      httpGet:
+                          path: /
+                          port: 8080
+                      initialDelaySeconds: 5
+                      periodSeconds: 5
+                  livenessProbe:
+                      httpGet:
+                          path: /
+                          port: 8080
+                      initialDelaySeconds: 10
+                      periodSeconds: 10
