@@ -1,0 +1,76 @@
+apiVersion: v1
+kind: Service
+metadata:
+    name: log-pipeline-db
+    namespace: log-pipeline
+spec:
+    clusterIP: None
+    selector:
+        app: postgres
+    ports:
+        - port: 5432
+          targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+    name: postgres
+    namespace: log-pipeline
+spec:
+    serviceName: log-pipeline-db
+    replicas: 1
+    selector:
+        matchLabels:
+            app: postgres
+    template:
+        metadata:
+            labels:
+                app: postgres
+        spec:
+            containers:
+                - name: postgres
+                  image: postgres:16
+                  ports:
+                      - containerPort: 5432
+                  envFrom:
+                      - configMapRef:
+                            name: log-pipeline-config
+                      - secretRef:
+                            name: log-pipeline-secret
+                  env:
+                      - name: POSTGRES_USER
+                        valueFrom:
+                            secretKeyRef:
+                                name: log-pipeline-secret
+                                key: DB_USER
+                      - name: POSTGRES_PASSWORD
+                        valueFrom:
+                            secretKeyRef:
+                                name: log-pipeline-secret
+                                key: DB_PASSWORD
+                      - name: POSTGRES_DB
+                        valueFrom:
+                            configMapKeyRef:
+                                name: log-pipeline-config
+                                key: DB_NAME
+                  volumeMounts:
+                      - name: pgdata
+                        mountPath: /var/lib/postgresql/data
+                  readinessProbe:
+                      exec:
+                          command: ["pg_isready", "-U", "$(POSTGRES_USER)"]
+                      initialDelaySeconds: 5
+                      periodSeconds: 5
+                  livenessProbe:
+                      exec:
+                          command: ["pg_isready", "-U", "$(POSTGRES_USER)"]
+                      initialDelaySeconds: 10
+                      periodSeconds: 10
+    volumeClaimTemplates:
+        - metadata:
+              name: pgdata
+          spec:
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                  requests:
+                      storage: 5Gi
