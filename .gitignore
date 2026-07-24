@@ -4,3 +4,4 @@ cmd/ingest/tmp
 tmp
 logs
 bin/
+k8s/secret.yaml
